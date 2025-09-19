@@ -4,6 +4,7 @@ const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/database');
 const authRoutes = require('./routes/auth');
+const issueRoutes = require('./routes/issueRoutes');
 const errorHandler = require('./middleware/errorHandler');
 
 const app = express();
@@ -19,11 +20,15 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Static serving for uploaded files
+app.use('/uploads', express.static('uploads'));
+
 // Connect to MongoDB
 connectDB();
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/issues', issueRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
@@ -45,11 +50,14 @@ app.use('*', (req, res) => {
 // Error handling middleware (should be last)
 app.use(errorHandler);
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`Server running on port ${PORT}`);
+  console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
+
+
+

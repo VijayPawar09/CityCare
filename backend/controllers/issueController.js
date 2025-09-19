@@ -9,8 +9,8 @@ exports.reportIssue = async (req, res) => {
       description,
       category,
       location,
-      imageUrl,
-      reportedBy: req.user.id
+      image: imageUrl, // when using JSON payloads
+      reportedBy: req.user.userId
     });
 
     await issue.save();
@@ -23,7 +23,7 @@ exports.reportIssue = async (req, res) => {
 
 exports.getAllIssues = async(req, res) => {
     try {
-        const issues = await Issue.find().populate('reportedBy', 'name email');
+        const issues = await Issue.find().populate('reportedBy', 'fullName email');
         res.json(issues);
     } catch(err){
         res.status(500).json({message: err.message})

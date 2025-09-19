@@ -1,7 +1,6 @@
 import React from "react";
 import "./index.css";
-import { AuthProvider } from "./Context/AuthContext";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // ✅ FIXED
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom"; // 
 
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
 import Login from "./Pages/Login";
@@ -14,10 +13,9 @@ import CityConnectHomepage from "./Pages/Homepage";
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <Routes>
-          <Route path="/" element={<CityConnectHomepage />} />
+    <Router>
+      <Routes>
+        <Route path="/" element={<CityConnectHomepage />} />
        <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
           {/* <Route path="/register" element={<Register />} /> */}
@@ -25,9 +23,9 @@ function App() {
           <Route
             path="/citizen"
             element={
-              // <ProtectedRoute roles={["citizen"]}>
+              <ProtectedRoute roles={["citizen"]}>
                 <CitizenDashboard />
-              // </ProtectedRoute>
+              </ProtectedRoute>
             }
           />
 
@@ -57,9 +55,8 @@ function App() {
               </ProtectedRoute>
             }
           />
-        </Routes>
-      </Router>
-    </AuthProvider>
+      </Routes>
+    </Router>
   );
 }
 

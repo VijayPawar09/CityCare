@@ -6,7 +6,8 @@ const ProtectedRoute = ({ children, roles }) => {
   const { user } = useAuth();
 
   if (!user) return <Navigate to="/login" />;
-  if (roles && !roles.includes(user.role)) return <Navigate to="/" />;
+  const userType = user.userType || user.role; // fallback if older shape
+  if (roles && !roles.includes(userType)) return <Navigate to="/" />;
 
   return children;
 };

@@ -1,6 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
-const emailService = require('../services/emailService');
+const EmailService = require('../services/emailService');
+
+// init email service (mock by default)
+const emailService = new EmailService(process.env.EMAIL_PROVIDER);
 
 // Generate JWT token
 const generateToken = (userId, email, userType) => {
@@ -41,7 +44,9 @@ const register = async (req, res, next) => {
 
     // Send verification email
     try {
-      await emailService.sendVerificationEmail(email, emailVerificationToken, fullName);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const verificationUrl = `${frontendUrl}/verify-email?token=${emailVerificationToken}`;
+      await emailService.sendVerificationEmail(email, fullName, verificationUrl);
     } catch (emailError) {
       console.error('Failed to send verification email:', emailError);
       // Continue with registration even if email fails
@@ -79,8 +84,6 @@ const verifyEmail = async (req, res, next) => {
     const user = await User.findOne({ emailVerificationToken: token });
     
     if (!user) {
-        console.log("failed");
-        
       return res.status(400).json({
         success: false,
         message: 'Invalid or expired verification token'
@@ -94,7 +97,7 @@ const verifyEmail = async (req, res, next) => {
 
     // Send welcome email
     try {
-      await emailService.sendWelcomeEmail(user.email, user.fullName, user.userType);
+      await emailService.sendWelcomeEmail(user.email, user.fullName);
     } catch (emailError) {
       console.error('Failed to send welcome email:', emailError);
       // Continue even if welcome email fails
@@ -150,8 +153,6 @@ const resendVerificationEmail = async (req, res, next) => {
     }
 
     if (user.isEmailVerified) {
-        
-        
       return res.status(400).json({
         success: false,
         message: 'Email is already verified'
@@ -163,7 +164,9 @@ const resendVerificationEmail = async (req, res, next) => {
     await user.save();
 
     // Send verification email
-    await emailService.sendVerificationEmail(user.email, emailVerificationToken, user.fullName);
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const verificationUrl = `${frontendUrl}/verify-email?token=${emailVerificationToken}`;
+    await emailService.sendVerificationEmail(user.email, user.fullName, verificationUrl);
 
     res.json({
       success: true,
@@ -204,7 +207,7 @@ const login = async (req, res, next) => {
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
-        message: 'Invalid email or password'
+        message: 'Invalid password'
       });
     }
 
@@ -256,7 +259,9 @@ const requestPasswordReset = async (req, res, next) => {
 
     // Send password reset email
     try {
-      await emailService.sendPasswordResetEmail(user.email, resetToken, user.fullName);
+      const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+      const resetUrl = `${frontendUrl}/reset-password?token=${resetToken}`;
+      await emailService.sendPasswordResetEmail(user.email, user.fullName, resetUrl);
     } catch (emailError) {
       console.error('Failed to send password reset email:', emailError);
       return res.status(500).json({

@@ -5,21 +5,31 @@ const API = axios.create({
   withCredentials: true, // if you're using cookies for auth
 });
 
+// Attach Authorization header from localStorage token on every request
+API.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers = config.headers || {};
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
 // ===========================
 //         ISSUE APIs
 // ===========================
 
-// Report a new issue
+// Report a new issue (multipart/form-data)
 export const reportIssue = async (formData) => {
-  const res = await API.post("/issues", formData, {
+  const res = await API.post("/issues/report", formData, {
     headers: { "Content-Type": "multipart/form-data" },
   });
   return res.data;
 };
 
-// Get issues reported by the current user (citizen)
-export const getMyIssues = async () => {
-  const res = await API.get("/issues/my-issues");
+// Get issues assigned to the logged-in volunteer
+export const getMyAssignedIssues = async () => {
+  const res = await API.get("/issues/assigned/me");
   return res.data;
 };
 
@@ -29,9 +39,15 @@ export const getAllIssues = async () => {
   return res.data;
 };
 
-// Update status of an issue (admin/volunteer)
-export const updateIssueStatus = async (id, newStatus) => {
-  const res = await API.put(`/issues/${id}`, { status: newStatus });
+// Volunteer updates their assigned issue status
+export const volunteerUpdateIssueStatus = async (id, newStatus) => {
+  const res = await API.put(`/issues/${id}/status`, { status: newStatus });
+  return res.data;
+};
+
+// Admin updates any issue status
+export const adminUpdateIssueStatus = async (id, newStatus) => {
+  const res = await API.patch(`/issues/update-status/${id}`, { status: newStatus });
   return res.data;
 };
 

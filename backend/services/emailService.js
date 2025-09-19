@@ -216,4 +216,5 @@ class EmailService {
   }
 }
 
-export default EmailService;
+module.exports = EmailService;
+

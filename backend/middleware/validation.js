@@ -17,10 +17,8 @@ const validateRegistration = [
     .withMessage('Email address is too long'),
     
   body('password')
-    .isLength({ min: 8, max: 128 })
-    .withMessage('Password must be between 8 and 128 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@$!%*?&)'),
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Password must be between 6 and 128 characters'),
     
   body('confirmPassword')
     .custom((value, { req }) => {
@@ -67,10 +65,8 @@ const validatePasswordReset = [
     .withMessage('Reset token is required'),
     
   body('password')
-    .isLength({ min: 8, max: 128 })
-    .withMessage('Password must be between 8 and 128 characters')
-    .matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]/)
-    .withMessage('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character'),
+    .isLength({ min: 6, max: 128 })
+    .withMessage('Password must be between 6 and 128 characters'),
     
   body('confirmPassword')
     .custom((value, { req }) => {
@@ -91,7 +87,6 @@ const handleValidationErrors = (req, res, next) => {
       message: error.msg,
       value: error.value
     }));
-    console.log(errors);
     
     return res.status(400).json({
       success: false,

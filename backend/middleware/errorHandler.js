@@ -24,6 +24,7 @@ const errorHandler = (err, req, res, next) => {
     }
     
     error = { message, statusCode: 409 };
+
   }
 
   // Mongoose validation error

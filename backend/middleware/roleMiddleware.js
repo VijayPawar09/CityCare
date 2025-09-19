@@ -1,8 +1,7 @@
-// middleware/roleMiddleware.js
 const roleMiddleware = (roles) => {
   return (req, res, next) => {
-    // roles must be an array of allowed role strings, e.g. ['admin']
-    if (!roles.includes(req.user.role)) {
+    const userType = req.user?.userType || req.user?.role; // fallback if old tokens exist
+    if (!roles.includes(userType)) {
       return res.status(403).json({ message: 'Access denied. Insufficient permission.' });
     }
     next();

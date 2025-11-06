@@ -9,6 +9,16 @@ const issueSchema = new mongoose.Schema({
     enum: ['pending', 'in-progress', 'resolved'],
     default: 'pending'
   },
+  // history of status changes
+  statusHistory: [
+    {
+      status: { type: String, enum: ['pending', 'in-progress', 'resolved'] },
+      changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      changedAt: { type: Date },
+      note: { type: String },
+      actorRole: { type: String, enum: ['citizen', 'volunteer', 'admin', 'unknown'], default: 'unknown' }
+    }
+  ],
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',

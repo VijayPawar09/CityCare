@@ -17,25 +17,17 @@ const CitizenDashboard = () => {
   const [modalImage, setModalImage] = useState(null);
   const navigate = useNavigate();
 
-  // derive backend base from axios instance (remove trailing /api)
   const BACKEND_BASE = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
 
   const getImageUrl = (imagePath) => {
     if (!imagePath) return null;
-
-    // Handle absolute URLs
     if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
       return imagePath;
     }
-
-    // Extract just the filename from the path
     const filename = imagePath.split(/[\\/]/).pop();
-
-    // Return the full URL
     return encodeURI(`${BACKEND_BASE}/uploads/${filename}`);
   };
 
-  // Listen for newly created issues
   useEffect(() => {
     const handler = (e) => {
       const newIssue = e?.detail;
@@ -49,12 +41,10 @@ const CitizenDashboard = () => {
         setMyReports((prev) => [reportWithDefaults, ...prev]);
       }
     };
-
     window.addEventListener("issue:created", handler);
     return () => window.removeEventListener("issue:created", handler);
   }, []);
 
-  // Fetch my reports on mount
   useEffect(() => {
     let mounted = true;
     const fetchReports = async () => {
@@ -72,7 +62,6 @@ const CitizenDashboard = () => {
     };
   }, []);
 
-  // Close modal on ESC key
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === "Escape") setModalImage(null);
@@ -82,19 +71,6 @@ const CitizenDashboard = () => {
     }
     return () => window.removeEventListener("keydown", onKey);
   }, [modalImage]);
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case "resolved":
-        return <CheckCircle className="w-5 h-5 text-green-500" />;
-      case "in-progress":
-        return <PlayCircle className="w-5 h-5 text-blue-500" />;
-      case "pending":
-        return <Clock className="w-5 h-5 text-orange-500" />;
-      default:
-        return <AlertTriangle className="w-5 h-5 text-gray-500" />;
-    }
-  };
 
   const getStatusColor = (status) => {
     switch (status) {
@@ -125,15 +101,15 @@ const CitizenDashboard = () => {
   const getCategoryColor = (category) => {
     switch ((category || "").toLowerCase()) {
       case "road":
-        return "bg-red-100 text-red-700 border-red-200";
+        return "bg-red-100 text-red-700";
       case "water":
-        return "bg-blue-100 text-blue-700 border-blue-200";
+        return "bg-blue-100 text-blue-700";
       case "electricity":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+        return "bg-yellow-100 text-yellow-800";
       case "garbage":
-        return "bg-green-100 text-green-700 border-green-200";
+        return "bg-green-100 text-green-700";
       default:
-        return "bg-gray-100 text-gray-700 border-gray-200";
+        return "bg-gray-100 text-gray-700";
     }
   };
 
@@ -146,16 +122,12 @@ const CitizenDashboard = () => {
   };
 
   const updateIssueStatus = async (reportId, newStatus) => {
-    // Optimistic update
     setUpdatingId(reportId);
     handleStatusChange(reportId, newStatus);
     try {
       await api.put(`/issues/${reportId}/status`, { status: newStatus });
     } catch (err) {
       console.error("Status update failed", err);
-      // Revert optimistic change on failure
-      // reload from server or flip back (simple revert: set status to previous)
-      // For simplicity, we'll reload reports from server
       try {
         const res = await api.get("/issues/my-issues");
         setMyReports(Array.isArray(res.data) ? res.data : []);
@@ -190,14 +162,10 @@ const CitizenDashboard = () => {
     }
   };
 
-  const handleReportIssue = () => {
-    // Navigate to the report page (protected route will prompt login if needed)
-    navigate(`/report`);
-  };
+  const handleReportIssue = () => navigate(`/report`);
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Simple Header */}
       <header className="bg-white shadow-sm border-b">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
@@ -212,7 +180,6 @@ const CitizenDashboard = () => {
       </header>
 
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <div className="bg-white rounded-xl p-4 sm:p-6 shadow-sm border">
             <div className="flex items-center justify-between">
@@ -262,6 +229,7 @@ const CitizenDashboard = () => {
             </div>
           </div>
         </div>
+
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">
             My Issues
@@ -275,8 +243,7 @@ const CitizenDashboard = () => {
           </button>
         </div>
 
-        {/* Issues List */}
-        <div className="bg-white rounded-xl shadow-sm border">
+        <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
           {myReports.length === 0 ? (
             <div className="p-8 sm:p-12 text-center">
               <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -306,17 +273,18 @@ const CitizenDashboard = () => {
                   )} group hover:bg-gray-50`}
                 >
                   <div className="flex gap-4">
-                    {/* Image thumbnail with hover effect */}
-                    <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 transition-transform group-hover:scale-105">
+                    <div
+                      onClick={() =>
+                        report.image && setModalImage(getImageUrl(report.image))
+                      }
+                      className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg overflow-hidden flex-shrink-0 bg-gray-100 transition-transform group-hover:scale-105 cursor-pointer shadow-sm"
+                    >
                       {report.image ? (
                         <img
                           src={getImageUrl(report.image)}
-                          alt={report.title || "issue image"}
+                          alt={report.title || "issue"}
                           loading="lazy"
-                          className="w-full h-full object-cover cursor-pointer"
-                          onClick={() =>
-                            setModalImage(getImageUrl(report.image))
-                          }
+                          className="w-full h-full object-cover"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-gray-400">
@@ -328,7 +296,7 @@ const CitizenDashboard = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
                             {report.title}
                           </h3>
                           <span
@@ -345,9 +313,9 @@ const CitizenDashboard = () => {
                           onChange={(e) =>
                             updateIssueStatus(report._id, e.target.value)
                           }
-                          className={`px-3 py-1 rounded-full text-sm font-medium border cursor-pointer ${getStatusColor(
+                          className={`px-3 py-1 rounded-full text-xs sm:text-sm font-medium border cursor-pointer ${getStatusColor(
                             report.status
-                          )}`}
+                          )} hover:opacity-90 transition-opacity`}
                           disabled={updatingId === report._id}
                         >
                           <option value="pending">⭕ Pending</option>
@@ -356,14 +324,14 @@ const CitizenDashboard = () => {
                         </select>
                       </div>
 
-                      <div className="mt-2 flex items-center gap-4 text-sm text-gray-600 flex-wrap">
-                        <span className="inline-flex items-center gap-1">
-                          <MapPin className="w-4 h-4" />
+                      <div className="mt-2 flex items-center gap-4 text-xs sm:text-sm text-gray-600">
+                        <span className="inline-flex items-center gap-1 min-w-0">
+                          <MapPin className="w-4 h-4 flex-shrink-0" />
                           <span className="truncate">
                             {report.location || "Unknown"}
                           </span>
                         </span>
-                        <span className="inline-flex items-center gap-1">
+                        <span className="inline-flex items-center gap-1 flex-shrink-0">
                           <Calendar className="w-4 h-4" />
                           <span>{formatDate(report.createdAt)}</span>
                         </span>
@@ -380,15 +348,15 @@ const CitizenDashboard = () => {
           )}
         </div>
       </div>
-      {/* Image modal/lightbox */}
+
       {modalImage && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70"
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 backdrop-blur-sm"
           onClick={() => setModalImage(null)}
         >
           <div className="relative max-w-[90vw] max-h-[90vh]">
             <button
-              className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg"
+              className="absolute -top-4 -right-4 bg-white rounded-full p-2 shadow-lg hover:bg-gray-100 transition-colors"
               onClick={(e) => {
                 e.stopPropagation();
                 setModalImage(null);
@@ -397,16 +365,12 @@ const CitizenDashboard = () => {
             >
               ✕
             </button>
-
-            <div onClick={(e) => e.stopPropagation()}>
-              <img
-                src={modalImage}
-                alt="full-size"
-                className="max-w-full max-h-[80vh] object-contain rounded-md mx-auto"
-              />
-
-              {/* simple modal: show image only; no download/open controls per user preference */}
-            </div>
+            <img
+              src={modalImage}
+              alt="Full size view"
+              className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-xl"
+              onClick={(e) => e.stopPropagation()}
+            />
           </div>
         </div>
       )}

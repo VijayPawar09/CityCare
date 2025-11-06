@@ -3,7 +3,7 @@ import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 
 const AdminDashboard = () => {
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
   const [issues, setIssues] = useState([]);
   const [stats, setStats] = useState({
     pending: 0,

@@ -1,6 +1,15 @@
 // LoginModal.jsx
 import React, { useState } from "react";
-import { X, Lock, Mail, User, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import {
+  X,
+  Lock,
+  Mail,
+  User,
+  Eye,
+  EyeOff,
+  Loader2,
+  AlertCircle,
+} from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
 
@@ -19,7 +28,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   });
   const { login: saveAuth } = useAuth();
 
-  const API_BASE_URL = "http://localhost:5000/api";
+  const API_BASE_URL = "http://localhost:5001/api";
 
   const handleInputChange = (e) => {
     setLoginForm({
@@ -54,9 +63,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(
-        (errorData?.errors?.[0]?.message) ||
-        errorData.message ||
-        "Registration failed"
+        errorData?.errors?.[0]?.message ||
+          errorData.message ||
+          "Registration failed"
       );
     }
 
@@ -103,9 +112,16 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         };
 
         const response = await signUpUser(signUpData);
-        saveAuth(response.user, response.token);
-
-        if (onLoginSuccess) onLoginSuccess(response.user);
+        // Do NOT auto-login immediately after sign up. Instead prompt user to sign in.
+        setIsSignUp(false);
+        setLoginForm({
+          email: response?.user?.email || signUpData.email,
+          password: "",
+          confirmPassword: "",
+          fullName: "",
+          userType: signUpData.userType,
+        });
+        setError("Account created successfully. Please sign in.");
         console.log("Sign up successful:", response);
       } else {
         const loginData = {
@@ -114,6 +130,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
         };
 
         const response = await loginUser(loginData);
+        // Persist auth using context
         saveAuth(response.user, response.token);
 
         if (response.user.userType === "admin") navigate("/admin");
@@ -403,7 +420,9 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
 
             <div className="text-center">
               <span className="text-gray-600">
-                {isSignUp ? "Already have an account?" : "Don't have an account?"}
+                {isSignUp
+                  ? "Already have an account?"
+                  : "Don't have an account?"}
               </span>
               <button
                 type="button"

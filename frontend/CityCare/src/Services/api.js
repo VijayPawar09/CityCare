@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const API = axios.create({
-  baseURL: "http://localhost:5000/api", // Make sure your backend runs on this
+  baseURL: "http://localhost:5001/api", // Backend runs on 5001 in dev (adjust if needed)
   withCredentials: true, // if you're using cookies for auth
 });
 
@@ -21,9 +21,8 @@ API.interceptors.request.use((config) => {
 
 // Report a new issue (multipart/form-data)
 export const reportIssue = async (formData) => {
-  const res = await API.post("/issues/report", formData, {
-    headers: { "Content-Type": "multipart/form-data" },
-  });
+  // Let axios set the Content-Type (including multipart boundary) automatically
+  const res = await API.post("/issues/report", formData);
   return res.data;
 };
 

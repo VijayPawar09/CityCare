@@ -1,1 +1,7 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* You can add global styles below */
+.app-root { }
+body { min-height: 100%; }

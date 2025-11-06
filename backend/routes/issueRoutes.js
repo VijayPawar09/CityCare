@@ -17,16 +17,20 @@ router.patch('/update-status/:id', authMiddleware, roleMiddleware(['admin']), as
       return res.status(400).json({ message: 'Invalid status value' });
     }
 
-    const updatedIssue = await Issue.findByIdAndUpdate(
-      issueId,
-      { status },
-      { new: true }
-    );
+    const issue = await Issue.findById(issueId);
+    if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
-    if (!updatedIssue) {
-      return res.status(404).json({ message: 'Issue not found' });
-    }
-    res.json({ message: 'Status updated', issue: updatedIssue });
+    issue.status = status;
+    issue.statusHistory = issue.statusHistory || [];
+    issue.statusHistory.push({ status, changedBy: req.user.userId, changedAt: new Date(), note: 'Admin update', actorRole: req.user.userType || req.user.role || 'admin' });
+    await issue.save();
+
+    const populated = await Issue.findById(issue._id)
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
+    res.json({ message: 'Status updated', issue: populated });
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
   }
@@ -41,7 +45,12 @@ router.get('/', authMiddleware, async (req, res) => {
     if (status) filter.status = status;
     if (category) filter.category = category;
 
-    const issues = await Issue.find(filter).sort({ createdAt: -1 });
+    const issues = await Issue.find(filter)
+      .sort({ createdAt: -1 })
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
     res.json(issues);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -50,10 +59,31 @@ router.get('/', authMiddleware, async (req, res) => {
 
 router.get('/all', authMiddleware, roleMiddleware(['admin']), async (req, res) => {
   try {
-    const issues = await Issue.find().sort({ createdAt: -1 });
+    const issues = await Issue.find()
+      .sort({ createdAt: -1 })
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
     res.json(issues);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
+// Get issues reported by the logged-in user (citizen)
+router.get('/my-issues', authMiddleware, async (req, res) => {
+  try {
+    const issues = await Issue.find({ reportedBy: req.user.userId })
+      .sort({ createdAt: -1 })
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
+    res.json(issues);
+  } catch (err) {
+    console.error('Failed to fetch my issues', err);
+    res.status(500).json({ message: 'Failed to fetch my issues' });
   }
 });
 
@@ -79,7 +109,10 @@ router.put('/:id/assign', authMiddleware, roleMiddleware(['admin']), async (req,
 // Volunteer: Get issues assigned to them
 router.get('/assigned/me', authMiddleware, roleMiddleware(['volunteer']), async (req, res) => {
   try {
-    const issues = await Issue.find({ assignedTo: req.user.userId }).populate('reportedBy', 'fullName email');
+    const issues = await Issue.find({ assignedTo: req.user.userId })
+      .populate('reportedBy', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
     res.json(issues);
   } catch (err) {
     res.status(500).json({ message: 'Server error', error: err.message });
@@ -89,7 +122,10 @@ router.get('/assigned/me', authMiddleware, roleMiddleware(['volunteer']), async 
 // GET issues assigned to logged-in volunteer (alias)
 router.get('/my-assigned', authMiddleware, roleMiddleware(['volunteer']), async (req, res) => {
   try {
-    const issues = await Issue.find({ assignedTo: req.user.userId });
+    const issues = await Issue.find({ assignedTo: req.user.userId })
+      .populate('reportedBy', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
     res.json(issues);
   } catch (err) {
     res.status(500).json({ message: 'Failed to fetch assigned issues' });
@@ -97,8 +133,8 @@ router.get('/my-assigned', authMiddleware, roleMiddleware(['volunteer']), async 
 });
 
 
-//PUT/api/issues/:id/status - volunteer updates issues status
-router.put('/:id/status', authMiddleware, roleMiddleware(['volunteer']), async (req, res) => {
+// PUT /api/issues/:id/status - allow assigned volunteer OR the original reporter to update status
+router.put('/:id/status', authMiddleware, async (req, res) => {
   try {
     const issueId = req.params.id;
     const { status } = req.body;
@@ -111,14 +147,40 @@ router.put('/:id/status', authMiddleware, roleMiddleware(['volunteer']), async (
     const issue = await Issue.findById(issueId);
     if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
-    if (issue.assignedTo?.toString() !== req.user.userId) {
-      return res.status(403).json({ message: 'You are not assigned to this issue' });
+    const requesterId = req.user.userId;
+
+    // If user is assigned volunteer
+    if (issue.assignedTo && issue.assignedTo.toString() === requesterId) {
+      issue.status = status;
+      issue.statusHistory = issue.statusHistory || [];
+      issue.statusHistory.push({ status, changedBy: requesterId, changedAt: new Date(), note: 'Volunteer update', actorRole: req.user.userType || req.user.role || 'volunteer' });
+      await issue.save();
+
+      const populated = await Issue.findById(issue._id)
+        .populate('reportedBy', 'fullName email')
+        .populate('assignedTo', 'fullName email')
+        .populate('statusHistory.changedBy', 'fullName email');
+
+      return res.json({ message: 'Status updated successfully', issue: populated });
     }
 
-    issue.status = status;
-    await issue.save();
+    // If user is the original reporter
+    if (issue.reportedBy && issue.reportedBy.toString() === requesterId) {
+      issue.status = status;
+      issue.statusHistory = issue.statusHistory || [];
+      issue.statusHistory.push({ status, changedBy: requesterId, changedAt: new Date(), note: 'Reporter update', actorRole: req.user.userType || req.user.role || 'citizen' });
+      await issue.save();
 
-    res.json({ message: 'Status updated successfully', issue });
+      const populated = await Issue.findById(issue._id)
+        .populate('reportedBy', 'fullName email')
+        .populate('assignedTo', 'fullName email')
+        .populate('statusHistory.changedBy', 'fullName email');
+
+      return res.json({ message: 'Status updated successfully', issue: populated });
+    }
+
+    // Otherwise, unauthorized
+    return res.status(403).json({ message: 'You are not authorized to update this issue status' });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Failed to update status' });
@@ -152,8 +214,17 @@ router.post(
   authMiddleware,
   upload.single('image'),
   async (req, res) => {
+    // Basic validation and logging to avoid silent 500s
     const { title, description, category, location } = req.body;
-    const imageUrl = req.file ? req.file.path : '';
+  // Build a public URL for uploaded file so clients can fetch via HTTP
+  const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}` : '';
+
+    console.log('Report request body:', req.body);
+    console.log('Report request file:', req.file && { originalname: req.file.originalname, path: req.file.path });
+
+    if (!title || !description || !location) {
+      return res.status(400).json({ message: 'title, description and location are required' });
+    }
 
     try {
       const issue = new Issue({
@@ -165,9 +236,28 @@ router.post(
         reportedBy: req.user.userId,
       });
 
+      // initialize status history with the reporting event
+      issue.statusHistory = [
+        {
+          status: issue.status,
+          changedBy: req.user.userId,
+          changedAt: new Date(),
+          note: 'Reported by user',
+          actorRole: req.user.userType || req.user.role || 'citizen',
+        },
+      ];
+
       await issue.save();
-      res.status(201).json({ message: 'Issue reported successfully', issue });
+
+      // re-fetch with populated fields to return actor names in history
+      const populated = await Issue.findById(issue._id)
+        .populate('reportedBy', 'fullName email')
+        .populate('assignedTo', 'fullName email')
+        .populate('statusHistory.changedBy', 'fullName email');
+
+      res.status(201).json({ message: 'Issue reported successfully', issue: populated });
     } catch (err) {
+      console.error('Error saving issue:', err);
       res.status(500).json({ message: err.message });
     }
   }

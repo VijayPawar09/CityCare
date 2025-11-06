@@ -3,7 +3,7 @@ import axios from "axios";
 import { useAuth } from "../Context/AuthContext";
 
 const VolunteerDashboard = () => {
-  const { logout } = useAuth();
+  const { logout, user: authUser } = useAuth();
   const [assignedIssues, setAssignedIssues] = useState([]);
 
   useEffect(() => {
@@ -32,7 +32,12 @@ const VolunteerDashboard = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-bold">Volunteer Dashboard</h1>
-        <button onClick={logout} className="bg-red-500 text-white px-4 py-2 rounded">Logout</button>
+        <button
+          onClick={logout}
+          className="bg-red-500 text-white px-4 py-2 rounded"
+        >
+          Logout
+        </button>
       </div>
 
       {assignedIssues.length === 0 ? (
@@ -43,7 +48,9 @@ const VolunteerDashboard = () => {
             <div key={issue._id} className="border rounded p-4 shadow">
               <h3 className="font-bold">{issue.title}</h3>
               <p>{issue.description}</p>
-              <p className="text-sm text-gray-500">Current Status: {issue.status}</p>
+              <p className="text-sm text-gray-500">
+                Current Status: {issue.status}
+              </p>
 
               <div className="mt-2 space-x-2">
                 <button

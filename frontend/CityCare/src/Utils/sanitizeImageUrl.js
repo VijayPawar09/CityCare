@@ -1,7 +1,7 @@
 // Utility to normalize image URLs so the browser can load them.
 // - leaves http(s) URLs unchanged
 // - converts legacy filesystem or file:// paths that reference the backend uploads folder
-//   into an HTTP URL pointing at the dev backend (defaults to http://localhost:5001)
+//   into an HTTP URL pointing at the dev backend (defaults to http://localhost:5000)
 
 export default function sanitizeImageUrl(url) {
   if (!url) return "";
@@ -24,10 +24,12 @@ export default function sanitizeImageUrl(url) {
     const filename = parts[parts.length - 1];
     if (!filename) return trimmed;
 
-    // Prefer Vite environment variable if set (VITE_API_BASE) e.g. http://localhost:5001
-    const apiBase = (import.meta && import.meta.env && import.meta.env.VITE_API_BASE) || "http://localhost:5001";
+    // Prefer Vite environment variable if set (VITE_API_BASE_URL) e.g. http://localhost:5000/api
+    const apiBaseUrl = (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_BASE_URL) || "http://localhost:5000/api";
+    // Derive backend base without /api
+    const backendBase = apiBaseUrl.replace(/\/api\/?$/, "");
 
-    return `${apiBase.replace(/\/\/$/, '')}/uploads/${encodeURIComponent(filename)}`;
+    return `${backendBase.replace(/\/\/$/, '')}/uploads/${encodeURIComponent(filename)}`;
   } catch (e) {
     // fallback to original
     return url;

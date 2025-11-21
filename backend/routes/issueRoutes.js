@@ -282,4 +282,22 @@ router.get(
   }
 );
 
+// Get single issue by ID (authenticated)
+router.get('/:id', authMiddleware, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const issue = await Issue.findById(id)
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
+
+    if (!issue) return res.status(404).json({ message: 'Issue not found' });
+
+    res.json(issue);
+  } catch (err) {
+    console.error('Failed to fetch issue by id', err);
+    res.status(500).json({ message: 'Server error', error: err.message });
+  }
+});
+
 module.exports = router;

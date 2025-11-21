@@ -1,7 +1,13 @@
 import axios from "axios";
 
+// Prefer environment-driven base URL, fallback to localhost:5000
+// Set VITE_API_BASE_URL in your frontend .env (e.g., http://localhost:5001/api)
+const BASE_URL =
+  (typeof import.meta !== "undefined" && import.meta.env && import.meta.env.VITE_API_BASE_URL) ||
+  "http://localhost:5000/api";
+
 const API = axios.create({
-  baseURL: "http://localhost:5001/api", // Backend runs on 5001 in dev (adjust if needed)
+  baseURL: BASE_URL,
   withCredentials: true, // if you're using cookies for auth
 });
 

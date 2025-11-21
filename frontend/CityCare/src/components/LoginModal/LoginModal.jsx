@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../Context/AuthContext";
+import api from "../../Services/api";
 
 const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   const [showPassword, setShowPassword] = useState(false);
@@ -28,8 +29,6 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   });
   const { login: saveAuth } = useAuth();
 
-  const API_BASE_URL = "http://localhost:5001/api";
-
   const handleInputChange = (e) => {
     setLoginForm({
       ...loginForm,
@@ -39,37 +38,26 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
   };
 
   const loginUser = async (credentials) => {
-    const response = await fetch(`${API_BASE_URL}/auth/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(credentials),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(errorData.message || "Login failed");
+    try {
+      const res = await api.post("/auth/login", credentials);
+      return res.data;
+    } catch (err) {
+      const message = err?.response?.data?.message || "Login failed";
+      throw new Error(message);
     }
-
-    return response.json();
   };
 
   const signUpUser = async (userData) => {
-    const response = await fetch(`${API_BASE_URL}/auth/register`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(userData),
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      throw new Error(
-        errorData?.errors?.[0]?.message ||
-          errorData.message ||
-          "Registration failed"
-      );
+    try {
+      const res = await api.post("/auth/register", userData);
+      return res.data;
+    } catch (err) {
+      const message =
+        err?.response?.data?.errors?.[0]?.message ||
+        err?.response?.data?.message ||
+        "Registration failed";
+      throw new Error(message);
     }
-
-    return response.json();
   };
 
   const storeAuthToken = (token, user) => {

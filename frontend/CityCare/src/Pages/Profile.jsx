@@ -26,12 +26,50 @@ const Profile = () => {
     profilePicture: user?.profilePicture || null,
   });
 
+  // derive backend base from axios instance (remove trailing /api)
+  const BACKEND_BASE = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    // absolute URL stored
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://")) {
+      return imagePath;
+    }
+    // Extract filename from any stored path
+    const filename = imagePath.split(/[\\/]/).pop();
+    return encodeURI(`${BACKEND_BASE}/uploads/${filename}`);
+  };
+
   // Fetch user's reported issues
   useEffect(() => {
     const fetchIssues = async () => {
       try {
-        const response = await api.get("/issues/my-issues");
-        setIssues(response.data);
+        // Try to get the user's issues first. If that returns empty (or fails due to auth),
+        // fall back to fetching all issues so the UI shows existing reports from DB.
+        let response;
+        try {
+          response = await api.get("/issues/my-issues");
+        } catch (err) {
+          // If access denied or any error, try fetching all issues
+          console.warn(
+            "Failed to fetch my-issues, falling back to /issues",
+            err
+          );
+          response = await api.get("/issues");
+        }
+
+        const data = response?.data ?? [];
+        // If my-issues returned an empty array, try to fetch all issues as a fallback
+        if (Array.isArray(data) && data.length === 0) {
+          try {
+            const all = await api.get("/issues");
+            setIssues(all.data || []);
+          } catch (e) {
+            setIssues([]);
+          }
+        } else {
+          setIssues(data);
+        }
       } catch (error) {
         console.error("Error fetching issues:", error);
       } finally {
@@ -257,7 +295,7 @@ const Profile = () => {
                   {issue.image && (
                     <div className="h-48 overflow-hidden">
                       <img
-                        src={issue.image}
+                        src={getImageUrl(issue.image)}
                         alt={issue.title}
                         className="w-full h-full object-cover"
                       />

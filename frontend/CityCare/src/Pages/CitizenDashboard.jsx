@@ -328,9 +328,13 @@ const CitizenDashboard = () => {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="text-lg font-semibold text-gray-900 truncate">
+                          <button
+                            onClick={() => navigate(`/citizen/issues/${report._id}`)}
+                            className="text-left text-lg font-semibold text-blue-600 hover:text-blue-700 hover:underline truncate"
+                            title="Open issue details"
+                          >
                             {report.title}
-                          </h3>
+                          </button>
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium ${getCategoryColor(
                               report.category

@@ -15,6 +15,7 @@ import VolunteerDashboard from "./Pages/volunteerDashboard";
 import ReportIssues from "./Pages/ReportIssue";
 import CityConnectHomepage from "./Pages/Homepage";
 import Profile from "./Pages/Profile";
+import IssueDetails from "./Pages/IssueDetails";
 
 function App() {
   return (
@@ -30,6 +31,15 @@ function App() {
           element={
             <ProtectedRoute roles={["citizen"]}>
               <CitizenDashboard />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/citizen/issues/:id"
+          element={
+            <ProtectedRoute roles={["citizen"]}>
+              <IssueDetails />
             </ProtectedRoute>
           }
         />

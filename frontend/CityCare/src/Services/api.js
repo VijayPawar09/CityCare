@@ -62,4 +62,19 @@ export const getIssueStats = async () => {
   return res.data;
 };
 
+// Assign current volunteer to an issue
+export const assignIssueToMe = async (id, volunteerId) => {
+  try {
+    const res = await API.put(`/issues/${id}/assign/me`);
+    return res.data;
+  } catch (e) {
+    try {
+      const res = await API.put(`/issues/${id}/assign`, volunteerId ? { volunteerId } : {});
+      return res.data;
+    } catch (err) {
+      throw err;
+    }
+  }
+};
+
 export default API;

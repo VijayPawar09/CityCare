@@ -149,8 +149,13 @@ const CitizenDashboard = () => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) {
+      return "Unknown";
+    }
     const now = new Date();
-    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    let diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    // Guard against future dates
+    if (diffInHours < 0) diffInHours = 0;
 
     if (diffInHours < 24) {
       return `${diffInHours}h ago`;

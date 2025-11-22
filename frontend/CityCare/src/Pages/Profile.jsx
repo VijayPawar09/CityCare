@@ -126,7 +126,7 @@ const Profile = () => {
                 <div className="w-32 h-32 rounded-full border-4 border-white bg-gray-200 flex items-center justify-center overflow-hidden">
                   {profileData.profilePicture ? (
                     <img
-                      src={profileData.profilePicture}
+                      src={getImageUrl(profileData.profilePicture)}
                       alt="Profile"
                       className="w-full h-full object-cover"
                     />

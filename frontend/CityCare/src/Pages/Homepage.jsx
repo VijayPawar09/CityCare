@@ -167,6 +167,12 @@ const CityConnectHomepage = () => {
     return () => clearInterval(timer);
   }, [heroSlides.length]);
 
+  useEffect(() => {
+    if (user && (user.userType === "volunteer" || user.role === "volunteer")) {
+      navigate("/volunteer");
+    }
+  }, [user, navigate]);
+
   const openLoginModal = () => {
     setIsLoginModalOpen(true);
     document.body.style.overflow = "hidden";
@@ -628,6 +634,12 @@ const CityConnectHomepage = () => {
                         <div className="mt-4">
                           <img
                             src={sanitizeImageUrl(issue.image)}
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = sanitizeImageUrl(
+                                "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=200&fit=crop"
+                              );
+                            }}
                             alt={issue.title}
                             className="w-full h-32 object-cover rounded-md"
                           />
@@ -678,6 +690,13 @@ const CityConnectHomepage = () => {
                   <div className="flex items-center mb-6">
                     <img
                       src={sanitizeImageUrl(images[index % images.length])} // rotate between the 3 images and sanitize
+                      onError={(e) => {
+                        // fallback to a known-good avatar if external image 404s
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = sanitizeImageUrl(
+                          "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop&crop=face"
+                        );
+                      }}
                       alt={testimonial.name}
                       className="w-12 h-12 rounded-full mr-4 object-cover"
                     />

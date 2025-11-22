@@ -22,7 +22,7 @@ app.use(helmet({
 }));
 // Configure CORS to accept the frontend origin(s).
 // In development we may serve the frontend from different ports (5173/5174).
-const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174'].filter(Boolean);
+const allowedOrigins = [process.env.FRONTEND_URL, 'http://localhost:5173', 'http://localhost:5174', 'https://city-care-two.vercel.app/'].filter(Boolean);
 app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (like curl, mobile apps or same-origin)

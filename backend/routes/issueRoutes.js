@@ -20,6 +20,13 @@ router.patch('/update-status/:id', authMiddleware, roleMiddleware(['admin']), as
     const issue = await Issue.findById(issueId);
     if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
+    // If the most recent status change was made by an admin, only admins may change it further
+    const lastHistory = issue.statusHistory && issue.statusHistory.length ? issue.statusHistory[issue.statusHistory.length - 1] : null;
+    const requesterRole = req.user?.userType || req.user?.role;
+    if (lastHistory && lastHistory.actorRole === 'admin' && requesterRole !== 'admin') {
+      return res.status(403).json({ message: 'Status locked by admin. Only admins can change it.' });
+    }
+
     issue.status = status;
     issue.statusHistory = issue.statusHistory || [];
     issue.statusHistory.push({ status, changedBy: req.user.userId, changedAt: new Date(), note: 'Admin update', actorRole: req.user.userType || req.user.role || 'admin' });
@@ -147,40 +154,23 @@ router.put('/:id/status', authMiddleware, async (req, res) => {
     const issue = await Issue.findById(issueId);
     if (!issue) return res.status(404).json({ message: 'Issue not found' });
 
-    const requesterId = req.user.userId;
-
-    // If user is assigned volunteer
-    if (issue.assignedTo && issue.assignedTo.toString() === requesterId) {
-      issue.status = status;
-      issue.statusHistory = issue.statusHistory || [];
-      issue.statusHistory.push({ status, changedBy: requesterId, changedAt: new Date(), note: 'Volunteer update', actorRole: req.user.userType || req.user.role || 'volunteer' });
-      await issue.save();
-
-      const populated = await Issue.findById(issue._id)
-        .populate('reportedBy', 'fullName email')
-        .populate('assignedTo', 'fullName email')
-        .populate('statusHistory.changedBy', 'fullName email');
-
-      return res.json({ message: 'Status updated successfully', issue: populated });
+    // Only admins may update issue status through this endpoint
+    const requesterRole = req.user?.userType || req.user?.role;
+    if (requesterRole !== 'admin') {
+      return res.status(403).json({ message: 'Only admins can update issue status' });
     }
 
-    // If user is the original reporter
-    if (issue.reportedBy && issue.reportedBy.toString() === requesterId) {
-      issue.status = status;
-      issue.statusHistory = issue.statusHistory || [];
-      issue.statusHistory.push({ status, changedBy: requesterId, changedAt: new Date(), note: 'Reporter update', actorRole: req.user.userType || req.user.role || 'citizen' });
-      await issue.save();
+    issue.status = status;
+    issue.statusHistory = issue.statusHistory || [];
+    issue.statusHistory.push({ status, changedBy: req.user.userId, changedAt: new Date(), note: 'Admin update', actorRole: 'admin' });
+    await issue.save();
 
-      const populated = await Issue.findById(issue._id)
-        .populate('reportedBy', 'fullName email')
-        .populate('assignedTo', 'fullName email')
-        .populate('statusHistory.changedBy', 'fullName email');
+    const populated = await Issue.findById(issue._id)
+      .populate('reportedBy', 'fullName email')
+      .populate('assignedTo', 'fullName email')
+      .populate('statusHistory.changedBy', 'fullName email');
 
-      return res.json({ message: 'Status updated successfully', issue: populated });
-    }
-
-    // Otherwise, unauthorized
-    return res.status(403).json({ message: 'You are not authorized to update this issue status' });
+    return res.json({ message: 'Status updated successfully', issue: populated });
   } catch (err) {
     console.log(err);
     res.status(500).json({ message: 'Failed to update status' });

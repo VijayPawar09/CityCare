@@ -25,7 +25,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
     password: "",
     confirmPassword: "",
     fullName: "",
-    userType: "citizen",
+    userType: "volunteer",
   });
   const { login: saveAuth } = useAuth();
 
@@ -146,7 +146,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       password: "",
       confirmPassword: "",
       fullName: "",
-      userType: "citizen",
+      userType: "volunteer",
     });
     setShowPassword(false);
     setError("");
@@ -162,7 +162,7 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
       password: "",
       confirmPassword: "",
       fullName: "",
-      userType: "citizen",
+      userType: "volunteer",
     });
     onClose();
   };
@@ -245,40 +245,6 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                 <div className="grid grid-cols-2 gap-3">
                   <label
                     className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
-                      loginForm.userType === "citizen"
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-200 hover:border-gray-300"
-                    } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
-                  >
-                    <input
-                      type="radio"
-                      name="userType"
-                      value="citizen"
-                      checked={loginForm.userType === "citizen"}
-                      onChange={handleInputChange}
-                      disabled={isLoading}
-                      className="sr-only"
-                    />
-                    <User
-                      className={`w-6 h-6 mb-2 ${
-                        loginForm.userType === "citizen"
-                          ? "text-blue-500"
-                          : "text-gray-400"
-                      }`}
-                    />
-                    <span
-                      className={`text-sm font-medium ${
-                        loginForm.userType === "citizen"
-                          ? "text-blue-700"
-                          : "text-gray-600"
-                      }`}
-                    >
-                      Citizen
-                    </span>
-                  </label>
-
-                  <label
-                    className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
                       loginForm.userType === "volunteer"
                         ? "border-green-500 bg-green-50"
                         : "border-gray-200 hover:border-gray-300"
@@ -308,6 +274,40 @@ const LoginModal = ({ isOpen, onClose, onLoginSuccess }) => {
                       }`}
                     >
                       Volunteer
+                    </span>
+                  </label>
+
+                  <label
+                    className={`relative flex flex-col items-center p-3 border-2 rounded-lg cursor-pointer transition-all ${
+                      loginForm.userType === "admin"
+                        ? "border-yellow-500 bg-yellow-50"
+                        : "border-gray-200 hover:border-gray-300"
+                    } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    <input
+                      type="radio"
+                      name="userType"
+                      value="admin"
+                      checked={loginForm.userType === "admin"}
+                      onChange={handleInputChange}
+                      disabled={isLoading}
+                      className="sr-only"
+                    />
+                    <User
+                      className={`w-6 h-6 mb-2 ${
+                        loginForm.userType === "admin"
+                          ? "text-yellow-500"
+                          : "text-gray-400"
+                      }`}
+                    />
+                    <span
+                      className={`text-sm font-medium ${
+                        loginForm.userType === "admin"
+                          ? "text-yellow-700"
+                          : "text-gray-600"
+                      }`}
+                    >
+                      Admin
                     </span>
                   </label>
                 </div>

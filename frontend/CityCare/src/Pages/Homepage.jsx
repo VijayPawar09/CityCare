@@ -192,26 +192,50 @@ const CityConnectHomepage = () => {
     }
   };
 
-  // Fetch a preview of the user's reports to show pending count
+  // Fetch a count of user's pending issues for the Pending nav badge
+  const [pendingCount, setPendingCount] = useState(0);
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      if (!user) {
+        setPendingCount(0);
+        return;
+      }
+      try {
+        const api = (await import("../Services/api")).default;
+        const res = await api.get("/issues/my-issues");
+        const data = res?.data ?? res;
+        if (mounted && Array.isArray(data)) {
+          setPendingCount(data.filter((r) => r.status !== "resolved").length);
+        }
+      } catch (err) {
+        console.error("Failed loading pending count", err);
+        if (mounted) setPendingCount(0);
+      }
+    };
+    load();
+    return () => (mounted = false);
+  }, [user]);
+
+  // Preview of user's recent issues for the Pending section
   const [myReportsPreview, setMyReportsPreview] = useState([]);
   const [loadingMyReportsPreview, setLoadingMyReportsPreview] = useState(false);
 
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const loadPreview = async () => {
       if (!user) {
         setMyReportsPreview([]);
         return;
       }
       setLoadingMyReportsPreview(true);
       try {
-        // Use the API client so requests go to the configured backend (port 5001 in dev)
-        const res = await (
-          await import("../Services/api")
-        ).default.get("/issues/my-issues");
+        const api = (await import("../Services/api")).default;
+        const res = await api.get("/issues/my-issues");
         const data = res?.data ?? res;
-        if (mounted)
-          setMyReportsPreview(Array.isArray(data) ? data.slice(0, 5) : []);
+        if (mounted && Array.isArray(data)) {
+          setMyReportsPreview(data.slice(0, 6));
+        }
       } catch (err) {
         console.error("Failed loading my issues preview", err);
         if (mounted) setMyReportsPreview([]);
@@ -219,8 +243,7 @@ const CityConnectHomepage = () => {
         if (mounted) setLoadingMyReportsPreview(false);
       }
     };
-
-    load();
+    loadPreview();
     return () => (mounted = false);
   }, [user]);
 
@@ -271,10 +294,7 @@ const CityConnectHomepage = () => {
                 >
                   Pending
                   <span className="ml-2 inline-flex items-center justify-center w-6 h-6 text-xs font-semibold text-white bg-red-500 rounded-full">
-                    {
-                      myReportsPreview.filter((r) => r.status !== "resolved")
-                        .length
-                    }
+                    {pendingCount}
                   </span>
                 </button>
               )}

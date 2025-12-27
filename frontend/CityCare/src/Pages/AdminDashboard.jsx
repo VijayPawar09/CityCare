@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "../Services/api";
 import { useAuth } from "../Context/AuthContext";
 
 const AdminDashboard = () => {
@@ -11,33 +11,65 @@ const AdminDashboard = () => {
     resolved: 0,
   });
 
-  useEffect(() => {
-    axios
-      .get("/api/issues")
-      .then((response) => {
-        if (Array.isArray(response.data)) {
-          setIssues(response.data);
-        } else {
-          console.error("Expected an array but got:", response.data);
-          setIssues([]);
-        }
-      })
-      .catch((error) => {
-        console.error("Error fetching issues:", error);
-        setIssues([]);
+  const fetchData = async () => {
+    try {
+      const res = await api.get("/issues");
+      setIssues(Array.isArray(res.data) ? res.data : []);
+    } catch (err) {
+      console.error("Error fetching issues:", err);
+      setIssues([]);
+    }
+
+    try {
+      const s = await api.get("/issues/stats");
+      setStats({
+        pending: s.data.pending || 0,
+        inProgress: s.data.inProgress || 0,
+        resolved: s.data.resolved || 0,
       });
+    } catch (err) {
+      console.error("Failed to fetch stats", err);
+    }
+  };
+
+  useEffect(() => {
+    fetchData();
   }, []);
+
+  // derive backend base URL from api client
+  const BACKEND_BASE = (api.defaults.baseURL || "").replace(/\/api\/?$/, "");
+
+  const getImageUrl = (imagePath) => {
+    if (!imagePath) return null;
+    if (imagePath.startsWith("http://") || imagePath.startsWith("https://"))
+      return imagePath;
+    const filename = imagePath.split(/[\\/]/).pop();
+    return encodeURI(`${BACKEND_BASE}/uploads/${filename}`);
+  };
 
   const assignToVolunteer = async (issueId) => {
     try {
       const volunteerId = prompt("Enter Volunteer ID to assign:");
       if (!volunteerId) return;
-      await axios.post(`/api/issues/${issueId}/assign`, { volunteerId });
+      await api.put(`/issues/${issueId}/assign`, { volunteerId });
       alert("Assigned successfully!");
       fetchData();
     } catch (error) {
       console.error("Error assigning issue:", error);
       alert("Assignment failed");
+    }
+  };
+
+  const changeStatus = async (issueId, newStatus) => {
+    try {
+      await api.patch(`/issues/update-status/${issueId}`, {
+        status: newStatus,
+      });
+      await fetchData();
+      alert("Status updated");
+    } catch (err) {
+      console.error("Failed to update status", err);
+      alert(err?.response?.data?.message || "Failed to update status");
     }
   };
 
@@ -71,21 +103,50 @@ const AdminDashboard = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {issues.map((issue) => (
           <div key={issue._id} className="border rounded p-4 shadow">
-            <h3 className="font-bold">{issue.title}</h3>
-            <p>{issue.description}</p>
-            <p className="text-sm text-gray-500">Status: {issue.status}</p>
-            {issue.assignedTo ? (
-              <p className="text-sm text-green-600 mt-1">
-                Assigned to: {issue.assignedTo.name}
-              </p>
-            ) : (
-              <button
-                onClick={() => assignToVolunteer(issue._id)}
-                className="mt-2 bg-blue-500 text-white px-4 py-1 rounded"
-              >
-                Assign to Volunteer
-              </button>
-            )}
+            <div className="flex gap-4">
+              <div className="w-28 h-28 rounded-lg overflow-hidden bg-gray-100 flex-shrink-0">
+                {issue.image ? (
+                  // image may be a URL or path
+                  <img
+                    src={getImageUrl(issue.image)}
+                    alt={issue.title}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center text-gray-400">
+                    No image
+                  </div>
+                )}
+              </div>
+
+              <div className="flex-1">
+                <h3 className="font-bold">{issue.title}</h3>
+                <p className="text-sm text-gray-700 mt-1">
+                  {issue.description}
+                </p>
+                <p className="text-sm text-gray-500 mt-2">
+                  Status: {issue.status}
+                </p>
+
+                <div className="mt-2">
+                  <select
+                    value={issue.status}
+                    onChange={(e) => changeStatus(issue._id, e.target.value)}
+                    className="px-3 py-1 rounded-full text-sm font-medium border cursor-pointer"
+                  >
+                    <option value="pending">⭕ Pending</option>
+                    <option value="in-progress">▶️ In Progress</option>
+                    <option value="resolved">✅ Resolved</option>
+                  </select>
+
+                  <p className="text-sm text-gray-600 mt-2">
+                    {issue.assignedTo
+                      ? `Assigned to: ${issue.assignedTo.name}`
+                      : "Unassigned"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         ))}
       </div>

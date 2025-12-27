@@ -19,7 +19,7 @@ const register = async (req, res, next) => {
   try {
     const { fullName, email, password, userType } = req.body;
 
-    // Check if user already exists
+    // Check if email already exists in users
     const existingUser = await User.findByEmail(email);
     if (existingUser) {
       return res.status(409).json({
@@ -28,7 +28,7 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create new user
+    // Create user (any role: citizen, volunteer, admin) in the existing users collection
     const user = new User({
       fullName,
       email,
@@ -126,7 +126,7 @@ const checkEmailAvailability = async (req, res, next) => {
     const { email } = req.body;
 
     const existingUser = await User.findByEmail(email);
-    
+
     res.json({
       success: true,
       available: !existingUser,
@@ -183,9 +183,9 @@ const login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
 
-    // Find user by email
+    // Find user account in users collection
     const user = await User.findByEmail(email).select('+password');
-    
+
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -203,7 +203,6 @@ const login = async (req, res, next) => {
 
     // Check password
     const isPasswordValid = await user.comparePassword(password);
-    
     if (!isPasswordValid) {
       return res.status(401).json({
         success: false,
@@ -211,24 +210,27 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Update last login
-    user.lastLogin = new Date();
-    await user.save();
+    // Update last login without re-validating the whole document
+    const updatedUser = await User.findByIdAndUpdate(
+      user._id,
+      { lastLogin: new Date() },
+      { new: true }
+    );
 
     // Generate JWT token
-    const token = generateToken(user._id, user.email, user.userType);
+    const token = generateToken(updatedUser._id, updatedUser.email, updatedUser.userType);
 
     // Return success response
     res.json({
       success: true,
       message: 'Login successful',
       user: {
-        id: user._id,
-        fullName: user.fullName,
-        email: user.email,
-        userType: user.userType,
-        isEmailVerified: user.isEmailVerified,
-        lastLogin: user.lastLogin
+        id: updatedUser._id,
+        fullName: updatedUser.fullName,
+        email: updatedUser.email,
+        userType: updatedUser.userType,
+        isEmailVerified: updatedUser.isEmailVerified,
+        lastLogin: updatedUser.lastLogin
       },
       token
     });

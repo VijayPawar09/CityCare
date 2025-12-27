@@ -329,7 +329,9 @@ const CitizenDashboard = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                         <div className="flex items-center gap-2 flex-wrap">
                           <button
-                            onClick={() => navigate(`/citizen/issues/${report._id}`)}
+                            onClick={() =>
+                              navigate(`/citizen/issues/${report._id}`)
+                            }
                             className="text-left text-lg font-semibold text-blue-600 hover:text-blue-700 hover:underline truncate"
                             title="Open issue details"
                           >
@@ -344,20 +346,24 @@ const CitizenDashboard = () => {
                           </span>
                         </div>
 
-                        <select
-                          value={report.status}
-                          onChange={(e) =>
-                            updateIssueStatus(report._id, e.target.value)
-                          }
-                          className={`px-3 py-1 rounded-full text-sm font-medium border cursor-pointer ${getStatusColor(
+                        <div
+                          className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(
                             report.status
                           )}`}
-                          disabled={updatingId === report._id}
+                          title={
+                            report.statusHistory &&
+                            report.statusHistory.length &&
+                            report.statusHistory[
+                              report.statusHistory.length - 1
+                            ].actorRole === "admin"
+                              ? "Status locked by admin"
+                              : undefined
+                          }
                         >
-                          <option value="pending">⭕ Pending</option>
-                          <option value="in-progress">▶️ In Progress</option>
-                          <option value="resolved">✅ Resolved</option>
-                        </select>
+                          {report.status === "pending" && "⭕ Pending"}
+                          {report.status === "in-progress" && "▶️ In Progress"}
+                          {report.status === "resolved" && "✅ Resolved"}
+                        </div>
                       </div>
 
                       <div className="mt-2 flex items-center gap-4 text-sm text-gray-600 flex-wrap">
